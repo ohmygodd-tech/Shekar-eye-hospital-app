@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.log
+dist/
+backend/uploads/
+deploy/backups/
+mobile/.expo/
+mobile/ios/
+mobile/android/
+mobile/google-play-service-account.json

@@ -1,0 +1,45 @@
+# Production stack: PostgreSQL + API + staff panel behind Caddy (automatic HTTPS).
+# Usage:  cp ../backend/.env.example .env   (fill it in)
+#         docker compose up -d --build
+#         docker compose exec api node src/db/seed.js --no-samples
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hospital
+      POSTGRES_USER: hospital
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hospital"]
+      interval: 10s
+
+  api:
+    build: ../backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://hospital:${DB_PASSWORD}@db:5432/hospital
+      UPLOAD_DIR: /data/uploads
+    volumes: [uploads:/data/uploads]
+    depends_on:
+      db: { condition: service_healthy }
+
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+      STAFF_DOMAIN: ${STAFF_DOMAIN:?set STAFF_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../admin/dist:/srv/staff:ro
+      - caddy:/data
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  uploads:
+  caddy:

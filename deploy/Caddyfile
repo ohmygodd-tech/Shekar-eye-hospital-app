@@ -1,0 +1,22 @@
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy api:4000
+}
+
+{$STAFF_DOMAIN} {
+	encode gzip
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+	handle {
+		root * /srv/staff
+		try_files {path} /index.html
+		file_server
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+}
